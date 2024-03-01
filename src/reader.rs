@@ -17,24 +17,32 @@ pub struct Reader {
 
 impl Reader {
     pub async fn iter(&self, params: IterParams<'_>) -> Result<Option<Iter>> {
-        let (file, offsets) = self.get_file_and_offsets(params.table)?;
-
-        let stream_reader =
-            ImmutableFileBuilder::new(&*file.path().context("get path of table file")?)
-                .with_buffer_size(params.buffer_size)
-                .with_sequential_concurrency(params.concurrency)
-                .build_existing()
-                .await
-                .map_err(|e| anyhow!("{}", e))
-                .context("open table file")?
-                .stream_reader()
-                .with_buffer_size(params.buffer_size)
-                .with_read_ahead(params.concurrency)
-                .build();
-
         let pos = match self.keys.position_or_next(params.from) {
             Some(pos) => pos,
             None => return Ok(None),
+        };
+
+        let stream_reader = if let Some(table) = params.table {
+            let (file, offsets) = self.get_file_and_offsets(table)?;
+
+            let stream_reader =
+                ImmutableFileBuilder::new(&*file.path().context("get path of table file")?)
+                    .with_buffer_size(params.buffer_size)
+                    .with_sequential_concurrency(params.concurrency)
+                    .build_existing()
+                    .await
+                    .map_err(|e| anyhow!("{}", e))
+                    .context("open table file")?
+                    .stream_reader()
+                    .with_buffer_size(params.buffer_size)
+                    .with_read_ahead(params.concurrency)
+                    .build();
+
+            let io_vecs = IoVecIter::from_caos_and_position(offsets, pos);
+
+            Some((stream_reader, io_vecs))
+        } else {
+            None
         };
 
         let (current_key, keys) = if pos == 0 {
@@ -45,8 +53,6 @@ impl Reader {
 
             (current_key, iter)
         };
-
-        let io_vecs = IoVecIter::from_caos_and_position(offsets, pos);
 
         let table_io_vecs = self
             .table_offsets
@@ -59,7 +65,6 @@ impl Reader {
             current_key,
             keys,
             stream_reader,
-            io_vecs,
             table_io_vecs,
             current_table_io_vecs: self.table_names.iter().map(|_| (0, 0)).collect(),
             to: params.to,
@@ -108,7 +113,7 @@ impl Reader {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, derive_builder::Builder)]
 pub struct IterParams<'input> {
-    table: &'input str,
+    table: Option<&'input str>,
     from: u64,
     to: u64,
     #[builder(default = "512 * 1024")]
@@ -155,8 +160,7 @@ pub struct Iter {
     started: bool,
     current_key: u64,
     keys: caos::Iter<u64>,
-    stream_reader: DmaStreamReader,
-    io_vecs: IoVecIter,
+    stream_reader: Option<(DmaStreamReader, IoVecIter)>,
     table_io_vecs: Vec<IoVecIter>,
     current_table_io_vecs: Vec<(u64, usize)>,
     to: u64,
@@ -165,7 +169,7 @@ pub struct Iter {
 }
 
 impl Iter {
-    pub async fn next(&mut self) -> Result<Option<((u64, u64), Vec<u8>)>> {
+    pub async fn next(&mut self) -> Result<Option<((u64, u64), Option<Vec<u8>>)>> {
         self.started = true;
 
         if self.current_key > self.to {
@@ -177,7 +181,6 @@ impl Iter {
             None => return Ok(None),
         };
 
-        let (_, len) = self.io_vecs.next().unwrap();
         for (current_io_vec, io_vecs) in self
             .current_table_io_vecs
             .iter_mut()
@@ -193,11 +196,18 @@ impl Iter {
             return Ok(None);
         }
 
-        let mut buf = vec![0; len];
-        self.stream_reader
-            .read_exact(&mut buf)
-            .await
-            .context("read from file")?;
+        let buf = if let Some((reader, io_vecs)) = &mut self.stream_reader {
+            let (_, len) = io_vecs.next().unwrap();
+            let mut buf = vec![0; len];
+            reader
+                .read_exact(&mut buf)
+                .await
+                .context("read from file")?;
+
+            Some(buf)
+        } else {
+            None
+        };
 
         Ok(Some((res_range, buf)))
     }
