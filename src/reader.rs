@@ -169,7 +169,7 @@ pub struct Iter {
 }
 
 impl Iter {
-    pub async fn next(&mut self) -> Result<Option<((u64, u64), Option<Vec<u8>>)>> {
+    pub async fn next(&mut self) -> Result<Option<(u64, Option<Vec<u8>>)>> {
         self.started = true;
 
         if self.current_key > self.to {
@@ -189,7 +189,6 @@ impl Iter {
             *current_io_vec = io_vecs.next().unwrap();
         }
 
-        let res_range = (self.current_key, next_key);
         self.current_key = next_key;
 
         if next_key > self.to {
@@ -209,7 +208,7 @@ impl Iter {
             None
         };
 
-        Ok(Some((res_range, buf)))
+        Ok(Some((self.current_key, buf)))
     }
 
     pub async fn read(&self, table: &str) -> Result<ReadResult> {
