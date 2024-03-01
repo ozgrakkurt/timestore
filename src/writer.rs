@@ -8,15 +8,15 @@ use glommio::{
 };
 
 pub struct Writer {
-    path: PathBuf,
-    keys: caos::Writer<u64>,
-    keys_file: Rc<DmaFile>,
-    table_offsets: Vec<caos::Writer<u64>>,
-    table_offsets_files: Vec<Rc<DmaFile>>,
-    table_names: Vec<String>,
-    table_files: Vec<Rc<DmaFile>>,
-    write_offsets: Vec<u64>,
-    length: u64,
+    pub(crate) path: PathBuf,
+    pub(crate) keys: caos::Writer<u64>,
+    pub(crate) keys_file: Rc<DmaFile>,
+    pub(crate) table_offsets: Vec<caos::Writer<u64>>,
+    pub(crate) table_offsets_files: Vec<Rc<DmaFile>>,
+    pub(crate) table_names: Vec<String>,
+    pub(crate) table_files: Vec<Rc<DmaFile>>,
+    pub(crate) write_offsets: Vec<u64>,
+    pub(crate) length: u64,
 }
 
 // This order should ensure that we don't lose any data and the writes are completely atomic and serializable.

@@ -9,10 +9,10 @@ use glommio::io::{
 
 #[derive(Clone)]
 pub struct Reader {
-    keys: caos::Reader<u64>,
-    table_offsets: Vec<caos::Reader<u64>>,
-    table_names: Vec<String>,
-    table_files: Vec<Rc<DmaFile>>,
+    pub(crate) keys: caos::Reader<u64>,
+    pub(crate) table_offsets: Vec<caos::Reader<u64>>,
+    pub(crate) table_names: Vec<String>,
+    pub(crate) table_files: Vec<Rc<DmaFile>>,
 }
 
 impl Reader {

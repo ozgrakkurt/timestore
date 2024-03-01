@@ -5,7 +5,7 @@ pub struct Config {
     path: PathBuf,
     create_if_not_exists: bool,
     tables: Vec<String>,
-    segment_size: u32,
+    segment_length: u32,
 }
 
 impl Config {
@@ -19,5 +19,9 @@ impl Config {
 
     pub fn tables(&self) -> &[String] {
         &self.tables
+    }
+
+    pub fn segment_length(&self) -> u32 {
+        self.segment_length
     }
 }
