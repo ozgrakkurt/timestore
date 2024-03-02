@@ -8,7 +8,7 @@ derive_builder = "0.13"
 anyhow = "1"
 glommio = "0.8"
 futures = "0.3"
-caos = "0.0.3"
+caos = "0.0.5"
 
 [dev-dependencies]
 uuid = { version = "1", features = ["v4"] }

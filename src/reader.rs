@@ -21,7 +21,7 @@ impl Reader {
     }
 
     pub async fn iter(&self, params: IterParams<'_>) -> Result<Option<Iter>> {
-        let pos = match self.keys.position_or_next(params.from) {
+        let pos = match self.keys.next_position(params.from) {
             Some(pos) => pos,
             None => return Ok(None),
         };
@@ -177,7 +177,7 @@ impl Iter {
     pub async fn next(&mut self) -> Result<Option<(u64, Vec<u8>)>> {
         self.started = true;
 
-        if self.current_key > self.to {
+        if self.current_key >= self.to {
             return Ok(None);
         }
 
@@ -195,10 +195,6 @@ impl Iter {
         }
 
         self.current_key = next_key;
-
-        if next_key > self.to {
-            return Ok(None);
-        }
 
         let buf = if let Some((reader, io_vecs)) = &mut self.stream_reader {
             let (_, len) = io_vecs.next().unwrap();
