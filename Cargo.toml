@@ -2,6 +2,8 @@
 name = "timestore"
 version = "0.0.1"
 edition = "2021"
+description = "Fully serializable on-disk datastore for time data"
+license = "MPL-2.0"
 
 [dependencies]
 derive_builder = "0.13"
