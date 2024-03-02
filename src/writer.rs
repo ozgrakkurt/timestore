@@ -34,6 +34,10 @@ pub struct Writer {
 // 8) write the key into in memory keys
 
 impl Writer {
+    pub fn table_names(&self) -> &[String] {
+        &self.table_names
+    }
+
     pub async fn append(&mut self, key: u64, values: Vec<Vec<u8>>) -> Result<()> {
         if values.len() != self.table_names.len() {
             return Err(anyhow!(
@@ -161,9 +165,7 @@ async fn read_write_at(file: &DmaFile, data: &[u8], pos: u64) -> Result<()> {
         buf.write_at(0, &*read_buf);
     }
 
-    let size: u64 = data.len().try_into().unwrap();
-    buf.write_at(extra_read_size, &size.to_be_bytes());
-    buf.write_at(extra_read_size + 8, data);
+    buf.write_at(extra_read_size, data);
     file.write_at(buf, write_pos)
         .await
         .map_err(|e| anyhow!("{}", e))

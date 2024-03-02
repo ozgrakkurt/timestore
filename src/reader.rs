@@ -16,6 +16,10 @@ pub struct Reader {
 }
 
 impl Reader {
+    pub fn table_names(&self) -> &[String] {
+        &self.table_names
+    }
+
     pub async fn iter(&self, params: IterParams<'_>) -> Result<Option<Iter>> {
         let pos = match self.keys.position_or_next(params.from) {
             Some(pos) => pos,
@@ -25,18 +29,18 @@ impl Reader {
         let stream_reader = if let Some(table) = params.table {
             let (file, offsets) = self.get_file_and_offsets(table)?;
 
-            let stream_reader =
-                ImmutableFileBuilder::new(&*file.path().context("get path of table file")?)
-                    .with_buffer_size(params.buffer_size)
-                    .with_sequential_concurrency(params.concurrency)
-                    .build_existing()
-                    .await
-                    .map_err(|e| anyhow!("{}", e))
-                    .context("open table file")?
-                    .stream_reader()
-                    .with_buffer_size(params.buffer_size)
-                    .with_read_ahead(params.concurrency)
-                    .build();
+            let path = file.path().context("get path of table file")?.to_owned();
+            let stream_reader = ImmutableFileBuilder::new(&path)
+                .with_buffer_size(params.buffer_size)
+                .with_sequential_concurrency(params.concurrency)
+                .build_existing()
+                .await
+                .map_err(|e| anyhow!("{}", e))
+                .context("open table file")?
+                .stream_reader()
+                .with_buffer_size(params.buffer_size)
+                .with_read_ahead(params.concurrency)
+                .build();
 
             let io_vecs = IoVecIter::from_caos_and_position(offsets, pos);
 
@@ -113,9 +117,10 @@ impl Reader {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, derive_builder::Builder)]
 pub struct IterParams<'input> {
-    table: Option<&'input str>,
     from: u64,
     to: u64,
+    #[builder(default)]
+    table: Option<&'input str>,
     #[builder(default = "512 * 1024")]
     buffer_size: usize,
     #[builder(default = "8")]
@@ -169,7 +174,7 @@ pub struct Iter {
 }
 
 impl Iter {
-    pub async fn next(&mut self) -> Result<Option<(u64, Option<Vec<u8>>)>> {
+    pub async fn next(&mut self) -> Result<Option<(u64, Vec<u8>)>> {
         self.started = true;
 
         if self.current_key > self.to {
@@ -203,9 +208,9 @@ impl Iter {
                 .await
                 .context("read from file")?;
 
-            Some(buf)
+            buf
         } else {
-            None
+            Vec::new()
         };
 
         Ok(Some((self.current_key, buf)))

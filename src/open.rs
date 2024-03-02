@@ -1,4 +1,5 @@
 use std::{
+    fs::create_dir_all,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -17,6 +18,8 @@ use crate::{Config, Reader, Writer};
 
 pub async fn open(cfg: Config) -> Result<(WriterFactory, ReaderFactory)> {
     if cfg.create_if_not_exists() {
+        create_dir_all(cfg.path()).context("create dir if not exists")?;
+
         let mut path = cfg.path().to_owned();
         path.push("length");
         let file = create_if_not_exists(&path)
@@ -40,9 +43,22 @@ pub async fn open(cfg: Config) -> Result<(WriterFactory, ReaderFactory)> {
             .map_err(|e| anyhow!("{}", e))
             .context("close length file")?;
 
+        let mut path = cfg.path().to_owned();
+        path.push("keys");
+        let file = create_if_not_exists(&path)
+            .await
+            .context("create length file if not exists")?;
+        file.close()
+            .await
+            .map_err(|e| anyhow!("{}", e))
+            .context("close keys file")?;
+
         for name in cfg.tables().iter() {
             let mut path = cfg.path().to_owned();
             path.push(name.as_str());
+
+            create_dir_all(&path).context("create table dir if not exists")?;
+
             path.push("offsets");
             let file = create_if_not_exists(&path)
                 .await
@@ -264,7 +280,7 @@ impl WriterFactory {
 }
 
 async fn load_ordered_u64_file(path: &Path, len: usize) -> Result<Vec<u64>> {
-    let buf = read_file(&path, len * 8).await.context("read file")?;
+    let buf = read_file(path, len * 8).await.context("read file")?;
 
     let mut prev = 0;
     let mut vals = Vec::with_capacity(len);
