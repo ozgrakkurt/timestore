@@ -16,6 +16,10 @@ pub struct Reader {
 }
 
 impl Reader {
+    pub fn keys(&self) -> caos::Reader<u64> {
+        self.keys.clone()
+    }
+
     pub fn table_names(&self) -> &[String] {
         &self.table_names
     }
