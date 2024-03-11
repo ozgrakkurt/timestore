@@ -1,6 +1,6 @@
 [package]
 name = "timestore"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 description = "Fully serializable on-disk datastore for time data"
 license = "MPL-2.0"

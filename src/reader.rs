@@ -178,7 +178,7 @@ pub struct Iter {
 }
 
 impl Iter {
-    pub async fn next(&mut self) -> Result<Option<(u64, Vec<u8>)>> {
+    pub async fn next(&mut self) -> Result<Option<((u64, u64), Vec<u8>)>> {
         self.started = true;
 
         if self.current_key >= self.to {
@@ -198,6 +198,7 @@ impl Iter {
             *current_io_vec = io_vecs.next().unwrap();
         }
 
+        let prev_key = self.current_key;
         self.current_key = next_key;
 
         let buf = if let Some((reader, io_vecs)) = &mut self.stream_reader {
@@ -213,7 +214,7 @@ impl Iter {
             Vec::new()
         };
 
-        Ok(Some((self.current_key, buf)))
+        Ok(Some(((prev_key, self.current_key), buf)))
     }
 
     pub async fn read(&self, table: &str) -> Result<ReadResult> {

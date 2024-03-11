@@ -49,7 +49,7 @@ fn simple_test() {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(iter.next().await.unwrap().unwrap(), (12, Vec::new()));
+        assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
         assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
         assert!(iter.next().await.unwrap().is_none());
 
@@ -75,9 +75,9 @@ fn simple_test() {
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(iter.next().await.unwrap().unwrap(), (12, Vec::new()));
+        assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
         assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
-        assert_eq!(iter.next().await.unwrap().unwrap(), (18, Vec::new()));
+        assert_eq!(iter.next().await.unwrap().unwrap(), ((12, 18), Vec::new()));
         assert_eq!(&*iter.read("table1").await.unwrap(), b"999");
         assert_eq!(&*iter.read("table0").await.unwrap(), b"888");
         assert!(iter.next().await.unwrap().is_none());
@@ -151,9 +151,9 @@ fn test_reopen() {
                 .await
                 .unwrap()
                 .unwrap();
-            assert_eq!(iter.next().await.unwrap().unwrap(), (12, Vec::new()));
+            assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
             assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
-            assert_eq!(iter.next().await.unwrap().unwrap(), (18, Vec::new()));
+            assert_eq!(iter.next().await.unwrap().unwrap(), ((12, 18), Vec::new()));
             assert_eq!(&*iter.read("table1").await.unwrap(), b"999");
             assert_eq!(&*iter.read("table0").await.unwrap(), b"888");
             assert!(iter.next().await.unwrap().is_none());
