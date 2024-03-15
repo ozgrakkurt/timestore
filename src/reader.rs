@@ -16,6 +16,10 @@ pub struct Reader {
 }
 
 impl Reader {
+    pub fn table_offsets(&self, table: &str) -> Result<caos::Reader<u64>> {
+        Ok(self.get_file_and_offsets(table)?.1)
+    }
+
     pub fn keys(&self) -> caos::Reader<u64> {
         self.keys.clone()
     }
@@ -81,6 +85,30 @@ impl Reader {
             table_names: self.table_names.clone(),
             table_files: self.table_files.clone(),
         }))
+    }
+
+    pub async fn read_many_with_base_offset<V, S>(
+        &self,
+        table: &str,
+        base_offset: u64,
+        iovs: S,
+        buffer_limit: MergedBufferLimit,
+        read_amp_limit: ReadAmplificationLimit,
+    ) -> Result<impl Stream<Item = Result<ReadResult>>>
+    where
+        V: IoVec + Unpin,
+        S: Stream<Item = V> + Unpin,
+    {
+        let (file, _) = self.get_file_and_offsets(table)?;
+
+        let iovs = iovs.map(move |iov| (iov.pos() + base_offset, iov.size()));
+
+        Ok(file
+            .read_many(iovs, buffer_limit, read_amp_limit)
+            .map(|res| match res {
+                Ok((_, buf)) => Ok(buf),
+                Err(e) => Err(anyhow!("{}", e).context("read from file")),
+            }))
     }
 
     pub async fn read(&self, table: &str, key: u64) -> Result<Option<ReadResult>> {
