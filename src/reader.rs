@@ -68,6 +68,8 @@ impl Reader {
             .map(|offsets| IoVecIter::from_caos_and_position(offsets.clone(), pos))
             .collect();
 
+        let to = std::cmp::min(params.to, self.keys.iter_from(0).last().unwrap_or(0));
+
         Ok(Some(Iter {
             started: false,
             current_key,
@@ -75,7 +77,7 @@ impl Reader {
             stream_reader,
             table_io_vecs,
             current_table_io_vecs: self.table_names.iter().map(|_| (0, 0)).collect(),
-            to: params.to,
+            to,
             table_names: self.table_names.clone(),
             table_files: self.table_files.clone(),
         }))
