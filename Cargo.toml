@@ -9,7 +9,7 @@ license = "MPL-2.0"
 derive_builder = "0.13"
 anyhow = "1"
 futures = "0.3"
-caos = "0.0.6"
+caos = "0.0.7"
 glommio = { git = "https://github.com/DataDog/glommio", rev = "a14a826" }
 
 [dev-dependencies]

@@ -72,7 +72,7 @@ impl Reader {
             .map(|offsets| IoVecIter::from_caos_and_position(offsets.clone(), pos))
             .collect();
 
-        let to = std::cmp::min(params.to, self.keys.iter_from(0).last().unwrap_or(0));
+        let to = std::cmp::min(params.to, self.keys.last().unwrap_or(0));
 
         Ok(Some(Iter {
             started: false,
