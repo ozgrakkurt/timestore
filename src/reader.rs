@@ -92,6 +92,7 @@ impl Reader {
         table: &str,
         base_offset: u64,
         iovs: S,
+        concurrency: usize,
         buffer_limit: MergedBufferLimit,
         read_amp_limit: ReadAmplificationLimit,
     ) -> Result<impl Stream<Item = Result<ReadResult>>>
@@ -105,6 +106,7 @@ impl Reader {
 
         Ok(file
             .read_many(iovs, buffer_limit, read_amp_limit)
+            .with_concurrency(concurrency)
             .map(|res| match res {
                 Ok((_, buf)) => Ok(buf),
                 Err(e) => Err(anyhow!("{}", e).context("read from file")),
