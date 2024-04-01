@@ -1,6 +1,6 @@
 [package]
 name = "timestore"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2021"
 description = "Fully serializable on-disk datastore for time data"
 license = "MPL-2.0"
@@ -10,7 +10,7 @@ derive_builder = "0.13"
 anyhow = "1"
 futures = "0.3"
 caos = "0.0.7"
-glommio = { git = "https://github.com/DataDog/glommio", rev = "a14a826" }
+glommio = "0.9"
 
 [dev-dependencies]
 uuid = { version = "1", features = ["v4"] }
