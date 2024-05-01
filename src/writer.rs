@@ -94,6 +94,7 @@ impl Writer {
         // 4) create a new length file and rename it onto the old one
         let mut path = self.path.clone();
         path.push("new_length");
+        glommio::io::remove(&path).await.ok();
         let mut sink = ImmutableFileBuilder::new(&path)
             .build_sink()
             .await
