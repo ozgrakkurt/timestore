@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use futures::{AsyncReadExt, Stream, StreamExt};
 use glommio::io::{
     DmaFile, DmaStreamReader, ImmutableFileBuilder, IoVec, MergedBufferLimit,
@@ -22,6 +22,26 @@ impl Reader {
 
     pub fn table_names(&self) -> &[String] {
         &self.table_names
+    }
+
+    /// Use to close the underlying file handles explicitly.
+    ///
+    /// Can be useful in a situation that opens/closes readers rapidly.
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is an active iterator or any other read operation on this reader
+    pub async fn close(self) -> Result<()> {
+        futures::future::try_join_all(
+            self.table_files
+                .into_iter()
+                .map(|f| Rc::try_unwrap(f).expect("unwrap file Rc").close()),
+        )
+        .await
+        .map_err(|e| anyhow!("{}", e))
+        .context("close all files")?;
+
+        Ok(())
     }
 
     pub async fn iter(&self, params: IterParams<'_>) -> Result<Option<Iter>> {

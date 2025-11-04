@@ -1,10 +1,10 @@
 use std::{path::PathBuf, rc::Rc};
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use futures::AsyncWriteExt;
 use glommio::{
-    io::{DmaFile, ImmutableFileBuilder},
     ByteSliceMutExt,
+    io::{DmaFile, ImmutableFileBuilder},
 };
 
 pub struct Writer {
@@ -131,6 +131,26 @@ impl Writer {
 
         // 8) write the key into in memory keys
         self.keys.append(&[key]);
+
+        Ok(())
+    }
+
+    /// Use to close the underlying file handles explicitly.
+    ///
+    /// Can be useful in a situation that opens/closes writers rapidly.
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is any active write operation on this reader
+    pub async fn close(self) -> Result<()> {
+        futures::future::try_join_all(
+            self.table_files
+                .into_iter()
+                .map(|f| Rc::try_unwrap(f).expect("unwrap file Rc").close()),
+        )
+        .await
+        .map_err(|e| anyhow!("{}", e))
+        .context("close all files")?;
 
         Ok(())
     }

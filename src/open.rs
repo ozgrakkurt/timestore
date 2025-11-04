@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use futures::AsyncReadExt;
 use glommio::io::{DmaFile, ImmutableFileBuilder, OpenOptions};
 

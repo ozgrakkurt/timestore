@@ -27,68 +27,73 @@ fn simple_test() {
         let mut writer = writer_factory.make().await.unwrap();
         let reader = reader_factory.make().await.unwrap();
 
-        let res = reader.read("table0", 12).await.unwrap();
-        assert!(res.is_none());
+        {
+            let res = reader.read("table0", 12).await.unwrap();
+            assert!(res.is_none());
 
-        let iter = reader
-            .iter(IterParamsBuilder::default().from(8).to(11).build().unwrap())
-            .await
-            .unwrap();
-        assert!(iter.is_none());
+            let iter = reader
+                .iter(IterParamsBuilder::default().from(8).to(11).build().unwrap())
+                .await
+                .unwrap();
+            assert!(iter.is_none());
 
-        writer
-            .append(12, vec![b"123".to_vec(), b"345".to_vec()])
-            .await
-            .unwrap();
+            writer
+                .append(12, vec![b"123".to_vec(), b"345".to_vec()])
+                .await
+                .unwrap();
 
-        let res = reader.read("table0", 12).await.unwrap().unwrap();
-        assert_eq!(&*res, b"123");
+            let res = reader.read("table0", 12).await.unwrap().unwrap();
+            assert_eq!(&*res, b"123");
 
-        let mut iter = reader
-            .iter(IterParamsBuilder::default().from(8).to(13).build().unwrap())
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
-        assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
-        assert!(iter.next().await.unwrap().is_none());
+            let mut iter = reader
+                .iter(IterParamsBuilder::default().from(8).to(13).build().unwrap())
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
+            assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
+            assert!(iter.next().await.unwrap().is_none());
 
-        let iter = reader
-            .iter(
-                IterParamsBuilder::default()
-                    .from(12)
-                    .to(13)
-                    .build()
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        assert!(iter.is_none());
+            let iter = reader
+                .iter(
+                    IterParamsBuilder::default()
+                        .from(12)
+                        .to(13)
+                        .build()
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert!(iter.is_none());
 
-        writer
-            .append(18, vec![b"888".to_vec(), b"999".to_vec()])
-            .await
-            .unwrap();
+            writer
+                .append(18, vec![b"888".to_vec(), b"999".to_vec()])
+                .await
+                .unwrap();
 
-        let mut iter = reader
-            .iter(IterParamsBuilder::default().from(8).to(14).build().unwrap())
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
-        assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
-        assert_eq!(iter.next().await.unwrap().unwrap(), ((12, 18), Vec::new()));
-        assert_eq!(&*iter.read("table1").await.unwrap(), b"999");
-        assert_eq!(&*iter.read("table0").await.unwrap(), b"888");
-        assert!(iter.next().await.unwrap().is_none());
+            let mut iter = reader
+                .iter(IterParamsBuilder::default().from(8).to(14).build().unwrap())
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(iter.next().await.unwrap().unwrap(), ((0, 12), Vec::new()));
+            assert_eq!(&*iter.read("table1").await.unwrap(), b"345");
+            assert_eq!(iter.next().await.unwrap().unwrap(), ((12, 18), Vec::new()));
+            assert_eq!(&*iter.read("table1").await.unwrap(), b"999");
+            assert_eq!(&*iter.read("table0").await.unwrap(), b"888");
+            assert!(iter.next().await.unwrap().is_none());
 
-        let mut iter = reader
-            .iter(IterParamsBuilder::default().from(8).to(12).build().unwrap())
-            .await
-            .unwrap()
-            .unwrap();
-        iter.next().await.unwrap().unwrap();
-        assert!(iter.next().await.unwrap().is_none());
+            let mut iter = reader
+                .iter(IterParamsBuilder::default().from(8).to(12).build().unwrap())
+                .await
+                .unwrap()
+                .unwrap();
+            iter.next().await.unwrap().unwrap();
+            assert!(iter.next().await.unwrap().is_none());
+        }
+
+        reader.close().await.unwrap();
+        writer.close().await.unwrap();
 
         Ok::<_, anyhow::Error>(())
     })

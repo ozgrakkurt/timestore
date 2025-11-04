@@ -4,6 +4,6 @@ mod reader;
 mod writer;
 
 pub use config::{Config, ConfigBuilder};
-pub use open::{open, ReaderFactory, WriterFactory};
+pub use open::{ReaderFactory, WriterFactory, open};
 pub use reader::{Iter, IterParams, IterParamsBuilder, Reader};
 pub use writer::Writer;
