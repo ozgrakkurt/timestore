@@ -144,6 +144,10 @@ pub async fn open(cfg: Config) -> Result<(WriterFactory, ReaderFactory)> {
                 name
             ));
         }
+        file.close()
+            .await
+            .map_err(|e| anyhow!("{}", e))
+            .context("close data file")?;
     }
 
     let writer_factory = WriterFactory {
@@ -306,18 +310,25 @@ async fn load_ordered_u64_file(path: &Path, len: usize) -> Result<Vec<u64>> {
 async fn read_file(path: &Path, len: usize) -> Result<Vec<u8>> {
     let mut buf = vec![0; len];
 
-    let mut file = ImmutableFileBuilder::new(&path)
+    let file = ImmutableFileBuilder::new(&path)
         .build_existing()
         .await
         .map_err(|e| anyhow!("{}", e))
-        .context("open file")?
+        .context("open file")?;
+
+    let mut reader = file
         .stream_reader()
         .with_buffer_size(512 * 1024)
         .with_read_ahead(8)
         .build();
 
-    file.read_exact(&mut buf).await.context("read contents")?;
+    reader.read_exact(&mut buf).await.context("read contents")?;
 
+    reader
+        .close()
+        .await
+        .map_err(|e| anyhow!("{}", e))
+        .context("close reader")?;
     file.close()
         .await
         .map_err(|e| anyhow!("{}", e))

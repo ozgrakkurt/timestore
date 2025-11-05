@@ -146,6 +146,8 @@ impl Writer {
         futures::future::try_join_all(
             self.table_files
                 .into_iter()
+                .chain(std::iter::once(self.keys_file))
+                .chain(self.table_offsets_files.into_iter())
                 .map(|f| Rc::try_unwrap(f).expect("unwrap file Rc").close()),
         )
         .await

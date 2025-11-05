@@ -238,16 +238,47 @@ pub struct Iter {
 }
 
 impl Iter {
+    pub async fn close(mut self) -> Result<()> {
+        if let Some(reader) = self.stream_reader.take() {
+            reader
+                .0
+                .close()
+                .await
+                .map_err(|e| anyhow!("{}", e))
+                .context("close reader")?;
+        }
+        Ok(())
+    }
+
     pub async fn next(&mut self) -> Result<Option<((u64, u64), Vec<u8>)>> {
         self.started = true;
 
         if self.current_key >= self.to {
+            if let Some(reader) = self.stream_reader.take() {
+                reader
+                    .0
+                    .close()
+                    .await
+                    .map_err(|e| anyhow!("{}", e))
+                    .context("close reader")?;
+            }
+
             return Ok(None);
         }
 
         let next_key = match self.keys.next() {
             Some(next_key) => next_key,
-            None => return Ok(None),
+            None => {
+                if let Some(reader) = self.stream_reader.take() {
+                    reader
+                        .0
+                        .close()
+                        .await
+                        .map_err(|e| anyhow!("{}", e))
+                        .context("close reader")?;
+                }
+                return Ok(None);
+            }
         };
 
         for (current_io_vec, io_vecs) in self
